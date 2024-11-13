@@ -95,6 +95,41 @@ RUN Get-RemoteFile `
     Remove-Item $Env:IBM_MQ_VERSION-IBM-MQC-Redist-Win64.zip; `
     setx /M MQ_FILE_PATH 'C:\ibm_mq'
 
+# Build dependencies for Openssl
+# Perl
+ENV PERL_VERSION="5.40.0.1"
+RUN Get-RemoteFile `
+      -Uri https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54001_64bit_UCRT/strawberry-perl-$Env:PERL_VERSION-64bit-portable.zip `
+      -Path "strawberry-perl-$Env:PERL_VERSION-64bit.zip" `
+    -Hash '754f3e2a8e473dc68d1540c7802fb166a025f35ef18960c4564a31f8b5933907' && `
+    7z x "strawberry-perl-$Env:PERL_VERSION-64bit.zip" -o"C:\perl" && `
+    Add-ToPath -Append "C:\perl\perl\bin" && `
+    Remove-Item "strawberry-perl-$Env:PERL_VERSION-64bit.zip"
+# Nasm
+ENV NASM_VERSION="2.16.03"
+RUN Get-RemoteFile `
+      -Uri https://www.nasm.us/pub/nasm/releasebuilds/$Env:NASM_VERSION/win64/nasm-$Env:NASM_VERSION-win64.zip `
+      -Path "nasm-$Env:NASM_VERSION-win64.zip" `
+    -Hash '3ee4782247bcb874378d02f7eab4e294a84d3d15f3f6ee2de2f47a46aa7226e6' && `
+    7z x "nasm-$Env:NASM_VERSION-win64.zip" -o"C:\nasm" && `
+    Add-ToPath -Append "C:\nasm\nasm-$Env:NASM_VERSION" && `
+    Remove-Item "nasm-$Env:NASM_VERSION-win64.zip"
+
+# openssl
+ENV OPENSSL_VERSION="3.3.2"
+RUN Get-RemoteFile `
+      -Uri https://www.openssl.org/source/openssl-$Env:OPENSSL_VERSION.tar.gz `
+      -Path openssl-$Env:OPENSSL_VERSION.tar.gz `
+      -Hash '2e8a40b01979afe8be0bbfb3de5dc1c6709fedb46d6c89c10da114ab5fc3d281'; `
+    7z x openssl-$Env:OPENSSL_VERSION.tar.gz -r -y && `
+    7z x openssl-$Env:OPENSSL_VERSION.tar -oC:\openssl_3 && `
+    cd C:\openssl_3\openssl-$Env:OPENSSL_VERSION && `
+    cmd.exe /s /c ""C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvarsall.bat" %DD_TARGET_ARCH% && `
+    C:\perl\perl\bin\perl.exe Configure && `
+    make depend && `
+    make -j 4 && `
+    make install_sw"
+
 # Set up runner
 COPY runner_dependencies.txt C:\runner_dependencies.txt
 RUN python -m pip install --no-warn-script-location -r C:\runner_dependencies.txt
