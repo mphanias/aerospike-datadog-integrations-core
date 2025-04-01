@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   aerospike:
     container_name: aerospike
@@ -19,6 +21,8 @@ services:
     image: aerospike/aerospike-prometheus-exporter:${AEROSPIKE_EXPORTER_VERSION}
     ports:
       - "9145:9145"
+    depends_on:
+      - aerospike-tools-asbench
     environment:
       AS_HOST: aerospike
       AS_PORT: 3000
